@@ -23,7 +23,7 @@ class InferenceConfig(PrintableConfig):
     checkpoint_G = os.path.join(MODELS_DIR, "liveportrait", "spade_generator.pth")
     checkpoint_S = os.path.join(MODELS_DIR, "liveportrait", "stitching_retargeting_module.pth")
 
-    flag_use_half_precision: bool = True  # whether to use half precision
+    flag_use_half_precision: bool = False  # whether to use half precision
 
     flag_lip_zero: bool = True  # whether let the lip to close state before animation, only take effect when flag_eye_retargeting and flag_lip_retargeting is False
     lip_zero_threshold: float = 0.03
@@ -48,6 +48,6 @@ class InferenceConfig(PrintableConfig):
     ref_max_shape: int = 1280
     ref_shape_n: int = 2
 
-    device_id: int = 0
+    device_id: str = "cpu"  # Use CPU instead of GPU
     flag_do_crop: bool = False  # whether to crop the source portrait to the face-cropping space
     flag_do_rot: bool = True  # whether to conduct the rotation when flag_do_crop is True

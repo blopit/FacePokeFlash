@@ -70,7 +70,7 @@ class LivePortraitWrapper(object):
             raise ValueError(f'img ndim should be 3 or 4: {x.ndim}')
         x = np.clip(x, 0, 1)  # clip to 0~1
         x = torch.from_numpy(x).permute(0, 3, 1, 2)  # 1xHxWx3 -> 1x3xHxW
-        x = x.cuda(self.device_id)
+        x = x.to(self.device_id)
         return x
 
     def prepare_driving_videos(self, imgs) -> torch.Tensor:
@@ -87,7 +87,7 @@ class LivePortraitWrapper(object):
         y = _imgs.astype(np.float32) / 255.
         y = np.clip(y, 0, 1)  # clip to 0~1
         y = torch.from_numpy(y).permute(0, 4, 3, 1, 2)  # TxHxWx3x1 -> Tx1x3xHxW
-        y = y.cuda(self.device_id)
+        y = y.to(self.device_id)
 
         return y
 
@@ -96,7 +96,7 @@ class LivePortraitWrapper(object):
         x: Bx3xHxW, normalized to 0~1
         """
         with torch.no_grad():
-            with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=self.cfg.flag_use_half_precision):
+            with torch.autocast(device_type='cpu', dtype=torch.float32, enabled=self.cfg.flag_use_half_precision):
                 feature_3d = self.appearance_feature_extractor(x)
 
         return feature_3d.float()
@@ -108,7 +108,7 @@ class LivePortraitWrapper(object):
         return: A dict contains keys: 'pitch', 'yaw', 'roll', 't', 'exp', 'scale', 'kp'
         """
         with torch.no_grad():
-            with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=self.cfg.flag_use_half_precision):
+            with torch.autocast(device_type='cpu', dtype=torch.float32, enabled=self.cfg.flag_use_half_precision):
                 kp_info = self.motion_extractor(x)
 
             if self.cfg.flag_use_half_precision:
@@ -254,7 +254,7 @@ class LivePortraitWrapper(object):
         """
         # The line 18 in Algorithm 1: D(W(f_s; x_s, x′_d,i)）
         with torch.no_grad():
-            with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=self.cfg.flag_use_half_precision):
+            with torch.autocast(device_type='cpu', dtype=torch.float32, enabled=self.cfg.flag_use_half_precision):
                 # get decoder input
                 ret_dct = self.warping_module(feature_3d, kp_source=kp_source, kp_driving=kp_driving)
                 # decode

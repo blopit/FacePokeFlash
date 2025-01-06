@@ -94,31 +94,31 @@ def load_model(ckpt_path, model_config, device, model_type):
     model_params = model_config['model_params'][f'{model_type}_params']
 
     if model_type == 'appearance_feature_extractor':
-        model = AppearanceFeatureExtractor(**model_params).cuda(device)
+        model = AppearanceFeatureExtractor(**model_params).to(device)
     elif model_type == 'motion_extractor':
-        model = MotionExtractor(**model_params).cuda(device)
+        model = MotionExtractor(**model_params).to(device)
     elif model_type == 'warping_module':
-        model = WarpingNetwork(**model_params).cuda(device)
+        model = WarpingNetwork(**model_params).to(device)
     elif model_type == 'spade_generator':
-        model = SPADEDecoder(**model_params).cuda(device)
+        model = SPADEDecoder(**model_params).to(device)
     elif model_type == 'stitching_retargeting_module':
         # Special handling for stitching and retargeting module
         config = model_config['model_params']['stitching_retargeting_module_params']
-        checkpoint = torch.load(ckpt_path, weights_only=True, map_location=lambda storage, loc: storage)
+        checkpoint = torch.load(ckpt_path, weights_only=True, map_location=device)
 
         stitcher = StitchingRetargetingNetwork(**config.get('stitching'))
         stitcher.load_state_dict(remove_ddp_dumplicate_key(checkpoint['retarget_shoulder']))
-        stitcher = stitcher.cuda(device)
+        stitcher = stitcher.to(device)
         stitcher.eval()
 
         retargetor_lip = StitchingRetargetingNetwork(**config.get('lip'))
         retargetor_lip.load_state_dict(remove_ddp_dumplicate_key(checkpoint['retarget_mouth']))
-        retargetor_lip = retargetor_lip.cuda(device)
+        retargetor_lip = retargetor_lip.to(device)
         retargetor_lip.eval()
 
         retargetor_eye = StitchingRetargetingNetwork(**config.get('eye'))
         retargetor_eye.load_state_dict(remove_ddp_dumplicate_key(checkpoint['retarget_eye']))
-        retargetor_eye = retargetor_eye.cuda(device)
+        retargetor_eye = retargetor_eye.to(device)
         retargetor_eye.eval()
 
         return {
@@ -129,7 +129,7 @@ def load_model(ckpt_path, model_config, device, model_type):
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
-    model.load_state_dict(torch.load(ckpt_path, weights_only=True, map_location=lambda storage, loc: storage))
+    model.load_state_dict(torch.load(ckpt_path, weights_only=True, map_location=device))
     model.eval()
     return model
 
