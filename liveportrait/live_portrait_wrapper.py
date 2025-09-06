@@ -96,8 +96,12 @@ class LivePortraitWrapper(object):
         x: Bx3xHxW, normalized to 0~1
         """
         with torch.no_grad():
-            with torch.autocast(device_type='cpu', dtype=torch.float32, enabled=self.cfg.flag_use_half_precision):
+            # MPS doesn't support autocast, so we'll skip it if using MPS
+            if self.device_id == "mps":
                 feature_3d = self.appearance_feature_extractor(x)
+            else:
+                with torch.autocast(device_type='cpu', dtype=torch.float32, enabled=self.cfg.flag_use_half_precision):
+                    feature_3d = self.appearance_feature_extractor(x)
 
         return feature_3d.float()
 
@@ -108,10 +112,14 @@ class LivePortraitWrapper(object):
         return: A dict contains keys: 'pitch', 'yaw', 'roll', 't', 'exp', 'scale', 'kp'
         """
         with torch.no_grad():
-            with torch.autocast(device_type='cpu', dtype=torch.float32, enabled=self.cfg.flag_use_half_precision):
+            # MPS doesn't support autocast, so we'll skip it if using MPS
+            if self.device_id == "mps":
                 kp_info = self.motion_extractor(x)
+            else:
+                with torch.autocast(device_type='cpu', dtype=torch.float32, enabled=self.cfg.flag_use_half_precision):
+                    kp_info = self.motion_extractor(x)
 
-            if self.cfg.flag_use_half_precision:
+            if self.cfg.flag_use_half_precision and self.device_id != "mps":
                 # float the dict
                 for k, v in kp_info.items():
                     if isinstance(v, torch.Tensor):

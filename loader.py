@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 DATA_ROOT = os.environ.get('DATA_ROOT', '/tmp/data')
 MODELS_DIR = os.path.join(DATA_ROOT, "models")
-DEVICE = torch.device("cpu")  # Force CPU usage
+DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cpu")  # Try to use MPS (Apple GPU) if available
 
 # Hugging Face repository information
 HF_REPO_ID = "jbilcke-hf/model-cocktail"

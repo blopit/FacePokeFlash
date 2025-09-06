@@ -9,6 +9,7 @@ import os.path as osp
 from dataclasses import dataclass
 from typing import Literal, Tuple
 from .base_config import PrintableConfig, make_abs_path
+import torch
 
 # Configuration
 DATA_ROOT = os.environ.get('DATA_ROOT', '/tmp/data')
@@ -48,6 +49,6 @@ class InferenceConfig(PrintableConfig):
     ref_max_shape: int = 1280
     ref_shape_n: int = 2
 
-    device_id: str = "cpu"  # Use CPU instead of GPU
+    device_id: str = "mps" if torch.backends.mps.is_available() else "cpu"  # Try to use MPS (Apple GPU) if available
     flag_do_crop: bool = False  # whether to crop the source portrait to the face-cropping space
     flag_do_rot: bool = True  # whether to conduct the rotation when flag_do_crop is True

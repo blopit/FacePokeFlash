@@ -2,6 +2,7 @@ import cv2
 import math
 import numpy as np
 from skimage import transform as trans
+import torch
 
 
 def transform(data, center, output_size, scale, rotation):
@@ -23,16 +24,12 @@ def transform(data, center, output_size, scale, rotation):
     return cropped, M
 
 
-def trans_points2d(pts, M):
-    new_pts = np.zeros(shape=pts.shape, dtype=np.float32)
-    for i in range(pts.shape[0]):
-        pt = pts[i]
-        new_pt = np.array([pt[0], pt[1], 1.], dtype=np.float32)
-        new_pt = np.dot(M, new_pt)
-        #print('new_pt', new_pt.shape, new_pt)
-        new_pts[i] = new_pt[0:2]
-
-    return new_pts
+def trans_points2d(pts, tform):
+    if not isinstance(pts, np.ndarray):
+        pts = pts.cpu().numpy()
+    tform = tform.cpu().numpy() if isinstance(tform, torch.Tensor) else tform
+    pts_new = np.dot(tform, np.concatenate((pts.T, np.ones((1, pts.shape[0])))))
+    return pts_new[0:2, :].T
 
 
 def trans_points3d(pts, M):
@@ -65,7 +62,7 @@ def estimate_affine_matrix_3d23d(X, Y):
         P_Affine: (3, 4). Affine camera matrix (the third row is [0, 0, 0, 1]).
     '''
     X_homo = np.hstack((X, np.ones([X.shape[0],1]))) #n x 4
-    P = np.linalg.lstsq(X_homo, Y)[0].T # Affine matrix. 3 x 4
+    P = np.linalg.lstsq(X_homo, Y, rcond=None)[0].T # Affine matrix. 3 x 4
     return P
 
 def P2sRt(P):
@@ -113,4 +110,22 @@ def matrix2angle(R):
     # rx, ry, rz = np.rad2deg(x), np.rad2deg(y), np.rad2deg(z)
     rx, ry, rz = x*180/np.pi, y*180/np.pi, z*180/np.pi
     return rx, ry, rz
+
+def estimate_norm(lmk, image_size=112, mode='None'):
+    assert lmk.shape == (5, 2)
+    tform = trans_points2d(lmk, get_reference_facial_points(image_size=image_size))
+    return tform
+
+def find_tfrom_points_to_points(X, Y):
+    """Find transform matrix from source points to target points."""
+    X = X.astype(np.float64)
+    Y = Y.astype(np.float64)
+
+    # Convert points to homogeneous coordinates
+    X_homo = np.concatenate((X, np.ones((X.shape[0], 1))), axis=1)
+    
+    # Use rcond=None to silence the warning and use machine precision
+    P = np.linalg.lstsq(X_homo, Y, rcond=None)[0].T
+    
+    return P
 
